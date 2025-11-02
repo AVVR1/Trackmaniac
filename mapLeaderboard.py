@@ -14,7 +14,7 @@ class mapLeaderboard:
     def get_times(self):
         try:
             # Find document for this map
-            result = self.collection.find_one({'map_name': self.map_name})
+            result = self.collection.find_one({f"times_{self.map_name}": self.map_name})
             return result['times'] if result and 'times' in result else []
         except:
             return []
@@ -36,7 +36,7 @@ class mapLeaderboard:
 
         # Update or insert document
         self.collection.update_one(
-            {'map_name': self.map_name},
+            {f"times_{self.map_name}": self.map_name},
             {'$set': {'times': times}},
             upsert=True
         )
@@ -46,9 +46,9 @@ class mapLeaderboard:
         if 0 <= index < len(times):
             times.pop(index)
             self.collection.update_one(
-                {'map_name': self.map_name},
+                {f"times_{self.map_name}": self.map_name},
                 {'$set': {'times': times}}
             )
 
     def delete_map(self):
-        self.collection.delete_one({'map_name': self.map_name})
+        self.collection.delete_one({f"times_{self.map_name}": self.map_name})
