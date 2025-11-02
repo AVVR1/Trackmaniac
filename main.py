@@ -24,10 +24,6 @@ mapLeaderboards = {}
 def has_administrator(ctx):
     return ctx.author.guild_permissions.administrator
 
-@bot.command()
-async def testembed(ctx):
-    await ctx.send(embed=discord.Embed(description="Hello"))
-
 @bot.event
 async def on_ready():
     for file in os.listdir():
