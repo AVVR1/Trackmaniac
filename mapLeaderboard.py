@@ -26,7 +26,7 @@ class mapLeaderboard:
         # Only keep best time per user
         for i in range(len(times) - 1):
             if times[i][0] == times[i+1][0]:        # same name
-                if times[i][1] <= times[i+1][1]:    # better or equal time
+                if times[i][1] >= times[i+1][1]:    # better or equal time
                     times.pop(i)
                     continue
                 else:
