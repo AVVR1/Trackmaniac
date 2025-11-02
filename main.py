@@ -5,9 +5,12 @@ from dotenv import load_dotenv
 import os
 from mapLeaderboard import mapLeaderboard
 from keep_alive import keep_alive
+import asyncio
+from pymongo import AsyncMongoClient
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
+mongoURI = os.getenv('MONGO_URI')
 
 keep_alive()
 
@@ -97,6 +100,20 @@ async def removetime(ctx, map_name: str, index: int):
         return
     mapLeaderboards[map_name].remove_time(index - 1)  # Convert to 0-based index
     await ctx.send(f"Time {index}. removed from map {map_name}.")
+
+
+mongodb = AsyncMongoClient(mongoURI, serverSelectionTimeoutMS=5000)
+
+async def server_connect():
+    try:
+        mongodb.admin.command("ping")
+        print("Connected successfully.")
+        pass
+    except Exception as err:
+        print(f"MongoDB connection error: {err}")
+        pass
+
+server_connect()
 
 # Run the bot
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)

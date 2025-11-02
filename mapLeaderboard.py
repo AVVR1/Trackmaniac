@@ -1,23 +1,24 @@
-import json
+from pymongo import MongoClient
 import os
+
+mongoURI = os.getenv('MONGO_URI')
 
 class mapLeaderboard:
     def __init__(self, map_name):
+        # Connect to MongoDB
+        self.client = MongoClient(mongoURI)
+        self.db = self.client['trackmania']  # database name
+        self.collection = self.db['leaderboards']  # collection name
         self.map_name = map_name
-        self.file_path = f"times_{map_name}.json"
-        if not os.path.exists(self.file_path):
-            with open(self.file_path, 'w') as f:
-                json.dump([], f)
-        
+
     def get_times(self):
-        if not os.path.exists(self.file_path):
-            return []
         try:
-            with open(self.file_path, 'r') as f:
-                return json.load(f)
+            # Find document for this map
+            result = self.collection.find_one({'map_name': self.map_name})
+            return result['times'] if result and 'times' in result else []
         except:
             return []
-    
+
     def add_time(self, user, time):
         times = self.get_times()
         times.append([user, time])
@@ -33,16 +34,21 @@ class mapLeaderboard:
                     times.pop(i+1)
                     continue
 
-        with open(self.file_path, 'w') as f:
-            json.dump(times, f)
+        # Update or insert document
+        self.collection.update_one(
+            {'map_name': self.map_name},
+            {'$set': {'times': times}},
+            upsert=True
+        )
 
     def remove_time(self, index):
         times = self.get_times()
         if 0 <= index < len(times):
             times.pop(index)
-            with open(self.file_path, 'w') as f:
-                json.dump(times, f)
+            self.collection.update_one(
+                {'map_name': self.map_name},
+                {'$set': {'times': times}}
+            )
 
-    def delete_file(self):
-        if os.path.exists(self.file_path):
-            os.remove(self.file_path)
+    def delete_map(self):
+        self.collection.delete_one({'map_name': self.map_name})
