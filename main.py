@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
-from mapTime import mapTime
+from mapLeaderboard import mapLeaderboard
 from keep_alive import keep_alive
 
 load_dotenv()
@@ -29,7 +29,7 @@ async def on_ready():
     for file in os.listdir():
         if file.startswith("times_") and file.endswith(".json"):
             map_name = file[6:-5]
-            mapTimes[map_name] = mapTime(map_name)
+            mapTimes[map_name] = mapLeaderboard(map_name)
     return
 
 @bot.event
@@ -57,8 +57,8 @@ async def times(ctx, map_name: str):
 async def submit(ctx, map_name: str, time: float):
     map_name = map_name.lower()
     if map_name not in mapTimes:
-        # create a new mapTime instance if it doesn't exist
-        mapTimes[map_name] = mapTime(map_name)
+        # create a new mapLeaderboard instance if it doesn't exist
+        mapTimes[map_name] = mapLeaderboard(map_name)
     mapTimes[map_name].add_time(ctx.author.name, time)
     await ctx.send(f"Time {time} submitted for map {map_name} by {ctx.author.name}.")
 

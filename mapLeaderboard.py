@@ -1,7 +1,7 @@
 import json
 import os
 
-class mapTime:
+class mapLeaderboard:
     def __init__(self, map_name):
         self.map_name = map_name
         self.file_path = f"times_{map_name}.json"
@@ -22,6 +22,17 @@ class mapTime:
         times = self.get_times()
         times.append([user, time])
         times.sort(key=lambda x: x[1])  # Sort by time
+
+        # Only keep best time per user
+        for i in range(len(times) - 1):
+            if times[i][0] == times[i+1][0]:        # same name
+                if times[i][1] <= times[i+1][1]:    # better or equal time
+                    times.pop(i)
+                    continue
+                else:
+                    times.pop(i+1)
+                    continue
+
         with open(self.file_path, 'w') as f:
             json.dump(times, f)
 
