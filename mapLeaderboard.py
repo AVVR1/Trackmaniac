@@ -7,8 +7,8 @@ class mapLeaderboard:
     def __init__(self, map_name):
         # Connect to MongoDB
         self.client = MongoClient(mongoURI)
-        self.db = self.client['trackmania']  # database name
-        self.collection = self.db['leaderboards']  # collection name
+        self.db = self.client['trackmaniac']  # database name
+        self.collection = self.db['mapleaderboards']  # collection name
         self.map_name = map_name
 
     def get_times(self):
