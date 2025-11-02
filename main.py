@@ -4,9 +4,12 @@ import logging
 from dotenv import load_dotenv
 import os
 from mapTime import mapTime
+from keep_alive import keep_alive
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
+
+keep_alive()
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
