@@ -4,6 +4,21 @@ import logging
 from dotenv import load_dotenv
 import os
 from mapTime import mapTime
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -92,5 +107,6 @@ async def removetime(ctx, map_name: str, index: int):
     mapTimes[map_name].remove_time(index - 1)  # Convert to 0-based index
     await ctx.send(f"Time {index}. removed from map {map_name}.")
 
+keep_alive()
 # Run the bot
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
