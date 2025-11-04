@@ -1,25 +1,37 @@
-from pymongo import MongoClient
+import asyncio
+import motor.motor_asyncio
+#from pymongo import MongoClient
 import os
 
 mongoURI = os.getenv('MONGO_URI')
+mongoConnect = motor.motor_asyncio.AsyncIOMotorClient(mongoURI)
+
+db = mongoConnect['trackmaniac']  # database name
+collection = db['mapleaderboards']  # collection name
+
+async def update_times(map_name, times):
+    updatedTimes = {
+    'map_name': map_name,
+    'times': times
+    }
+    collection.replace_one({'map_name' : map_name}, updatedTimes)
 
 class mapLeaderboard:
-    def __init__(self, map_name):
-        # Connect to MongoDB
-        self.client = MongoClient(mongoURI)
-        self.db = self.client['trackmaniac']  # database name
-        self.collection = self.db['mapleaderboards']  # collection name
+    async def __init__(self, map_name):
         self.map_name = map_name
+        if await collection.find_one({'map_name' : map_name}) is None:
+            await collection.insert_one({'map_name': map_name, 'times': []})
 
-    def get_times(self):
-        try:
-            # Find document for this map
-            result = self.collection.find_one({f"times_{self.map_name}": self.map_name})
-            return result['times'] if result and 'times' in result else []
-        except:
+    async def get_times(self):
+        if await collection.find_one({'map_name' : self.map_name}) is None:
             return []
+        return collection.find_one({'map_name': self.map_name})['times']
 
-    def add_time(self, user, time):
+    async def add_time(self, user, time):
+
+        if await collection.find_one({'map_name' : self.map_name})['times'] is None:
+            await collection.insert_one({'map_name': self.map_name, 'times': [user, time]})
+
         times = self.get_times()
         times.append([user, time])
         times.sort(key=lambda x: x[1])  # Sort by time
@@ -33,22 +45,16 @@ class mapLeaderboard:
                 else:
                     times.pop(i+1)
                     continue
-
+        
         # Update or insert document
-        self.collection.update_one(
-            {f"times_{self.map_name}": self.map_name},
-            {'$set': {'times': times}},
-            upsert=True
-        )
+        await update_times(self.map_name, times)
 
-    def remove_time(self, index):
+    async def remove_time(self, index):
         times = self.get_times()
         if 0 <= index < len(times):
             times.pop(index)
-            self.collection.update_one(
-                {f"times_{self.map_name}": self.map_name},
-                {'$set': {'times': times}}
-            )
+            await update_times(self.map_name, times)
+            return
 
     def delete_map(self):
-        self.collection.delete_one({f"times_{self.map_name}": self.map_name})
+        collection.delete_one({'map_name': self.map_name})

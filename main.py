@@ -5,12 +5,15 @@ from dotenv import load_dotenv
 import os
 from mapLeaderboard import mapLeaderboard
 from keep_alive import keep_alive
-import asyncio
-from pymongo import AsyncMongoClient
+import motor.motor_asyncio
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
 mongoURI = os.getenv('MONGO_URI')
+mongoConnect = motor.motor_asyncio.AsyncIOMotorClient(mongoURI)
+
+db = mongoConnect['trackmaniac']  # database name
+collection = db['mapleaderboards']  # collection name
 
 keep_alive()
 
@@ -29,10 +32,14 @@ def has_administrator(ctx):
 
 @bot.event
 async def on_ready():
-    for file in os.listdir():
-        if file.startswith("times_") and file.endswith(".json"):
-            map_name = file[6:-5]
-            mapLeaderboards[map_name] = mapLeaderboard(map_name)
+    # CHANGE
+    for doc in collection.find():
+        map_name = doc['map_name']
+        mapLeaderboards[map_name] = mapLeaderboard(map_name)
+    ###
+    channel = bot.get_channel(1433616925933568050)
+    await channel.send(f"mapLeaderboards: {mapLeaderboards}")
+    ###
     return
 
 @bot.event
@@ -51,7 +58,7 @@ async def times(ctx, map_name: str):
     if map_name not in mapLeaderboards:
         await ctx.send(f"No times for map {map_name}.")
         return
-    times = mapLeaderboards[map_name].get_times()[:10]
+    times = mapLeaderboards[map_name].get_times()[:10] # Get top 10 times
     times_str = "\n".join([f"{i+1}. {user}: {time}" for i, (user, time) in enumerate(times)])
     embed = discord.Embed(
         title=f"Times for map {map_name}:",
@@ -100,20 +107,6 @@ async def removetime(ctx, map_name: str, index: int):
         return
     mapLeaderboards[map_name].remove_time(index - 1)  # Convert to 0-based index
     await ctx.send(f"Time {index}. removed from map {map_name}.")
-
-
-mongodb = AsyncMongoClient(mongoURI, serverSelectionTimeoutMS=5000)
-
-async def server_connect():
-    try:
-        mongodb.admin.command("ping")
-        print("Connected successfully.")
-        pass
-    except Exception as err:
-        print(f"MongoDB connection error: {err}")
-        pass
-
-server_connect()
 
 # Run the bot
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
