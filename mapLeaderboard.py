@@ -1,8 +1,8 @@
-import asyncio
-import motor.motor_asyncio
-#from pymongo import MongoClient
 import os
+from dotenv import load_dotenv
+import motor.motor_asyncio
 
+load_dotenv()
 mongoURI = os.getenv('MONGO_URI')
 mongoConnect = motor.motor_asyncio.AsyncIOMotorClient(mongoURI)
 
@@ -11,28 +11,27 @@ collection = db['mapleaderboards']  # collection name
 
 async def update_times(map_name, times):
     updatedTimes = {
-    'map_name': map_name,
+    'map_leaderboard': map_name,
     'times': times
     }
-    collection.replace_one({'map_name' : map_name}, updatedTimes)
+    await collection.replace_one({'map_leaderboard' : map_name}, updatedTimes)
 
 class mapLeaderboard:
-    async def __init__(self, map_name):
+    def __init__(self, map_name):
         self.map_name = map_name
-        if await collection.find_one({'map_name' : map_name}) is None:
-            await collection.insert_one({'map_name': map_name, 'times': []})
 
     async def get_times(self):
-        if await collection.find_one({'map_name' : self.map_name}) is None:
+        if await collection.find_one({'map_leaderboard' : self.map_name}) is None:
             return []
-        return collection.find_one({'map_name': self.map_name})['times']
+        mapLB = await collection.find_one({'map_leaderboard': self.map_name})
+        return mapLB.get('times', [])
 
     async def add_time(self, user, time):
+        doc = await collection.find_one({'map_leaderboard' : self.map_name})
+        if (doc is None) or (doc.get('times') is None):
+            await collection.insert_one({'map_leaderboard': self.map_name, 'times': [[user, time]]})
 
-        if await collection.find_one({'map_name' : self.map_name})['times'] is None:
-            await collection.insert_one({'map_name': self.map_name, 'times': [user, time]})
-
-        times = self.get_times()
+        times = await self.get_times()
         times.append([user, time])
         times.sort(key=lambda x: x[1])  # Sort by time
 
@@ -50,11 +49,11 @@ class mapLeaderboard:
         await update_times(self.map_name, times)
 
     async def remove_time(self, index):
-        times = self.get_times()
+        times = await self.get_times()
         if 0 <= index < len(times):
             times.pop(index)
             await update_times(self.map_name, times)
             return
 
-    def delete_map(self):
-        collection.delete_one({'map_name': self.map_name})
+    async def delete_map(self):
+        await collection.delete_one({'map_leaderboard': self.map_name})

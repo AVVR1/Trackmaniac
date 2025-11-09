@@ -3,17 +3,11 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
-from mapLeaderboard import mapLeaderboard
+from mapLeaderboard import mapLeaderboard, collection
 from keep_alive import keep_alive
-import motor.motor_asyncio
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
-mongoURI = os.getenv('MONGO_URI')
-mongoConnect = motor.motor_asyncio.AsyncIOMotorClient(mongoURI)
-
-db = mongoConnect['trackmaniac']  # database name
-collection = db['mapleaderboards']  # collection name
 
 keep_alive()
 
@@ -32,18 +26,9 @@ def has_administrator(ctx):
 
 @bot.event
 async def on_ready():
-    # CHANGE
-    for doc in collection.find():
-        map_name = doc['map_name']
+    async for doc in collection.find({}):
+        map_name = doc['map_leaderboard']
         mapLeaderboards[map_name] = mapLeaderboard(map_name)
-    ###
-    channel = bot.get_channel(1433616925933568050)
-    await channel.send(f"mapLeaderboards: {mapLeaderboards}")
-    ###
-    return
-
-@bot.event
-async def on_member_join(member):
     return
 
 @bot.event
@@ -58,7 +43,7 @@ async def times(ctx, map_name: str):
     if map_name not in mapLeaderboards:
         await ctx.send(f"No times for map {map_name}.")
         return
-    times = mapLeaderboards[map_name].get_times()[:10] # Get top 10 times
+    times = (await mapLeaderboards[map_name].get_times())[:10] # Get top 10 times
     times_str = "\n".join([f"{i+1}. {user}: {time}" for i, (user, time) in enumerate(times)])
     embed = discord.Embed(
         title=f"Times for map {map_name}:",
@@ -72,7 +57,7 @@ async def submit(ctx, map_name: str, time: float):
     if map_name not in mapLeaderboards:
         # create a new mapLeaderboard instance if it doesn't exist
         mapLeaderboards[map_name] = mapLeaderboard(map_name)
-    mapLeaderboards[map_name].add_time(ctx.author.name, time)
+    await mapLeaderboards[map_name].add_time(ctx.author.name, time)
     await ctx.send(f"Time {time} submitted for map {map_name} by {ctx.author.name}.")
 
 @bot.command()
@@ -92,7 +77,7 @@ async def deletemap(ctx, map_name: str):
     if map_name not in mapLeaderboards:
         await ctx.send(f"No map {map_name}.")
         return
-    mapLeaderboards[map_name].delete_file()
+    await mapLeaderboards[map_name].delete_file()
     del mapLeaderboards[map_name]
     await ctx.send(f"All times for map {map_name} have been deleted.")
 
@@ -105,7 +90,7 @@ async def removetime(ctx, map_name: str, index: int):
     if map_name not in mapLeaderboards:
         await ctx.send(f"No map {map_name}.")
         return
-    mapLeaderboards[map_name].remove_time(index - 1)  # Convert to 0-based index
+    await mapLeaderboards[map_name].remove_time(index - 1)  # Convert to 0-based index
     await ctx.send(f"Time {index}. removed from map {map_name}.")
 
 # Run the bot
