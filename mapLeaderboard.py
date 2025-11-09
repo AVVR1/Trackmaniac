@@ -33,17 +33,22 @@ class mapLeaderboard:
 
         times = await self.get_times()
         times.append([user, time])
-        times.sort(key=lambda x: x[1])  # Sort by time
+        times.sort(key=lambda x: x[0])  # Sort by name
 
         # Only keep best time per user
         for i in range(len(times) - 1):
             if times[i][0] == times[i+1][0]:        # same name
+                print("same name")
                 if times[i][1] >= times[i+1][1]:    # better or equal time
+                    print(f"better or equal time removintg { times[i] }")
                     times.pop(i)
-                    continue
+                    break
                 else:
+                    print(f"worse time; removing { times[i+1] }")
                     times.pop(i+1)
-                    continue
+                    break
+
+        print(times)
         
         # Update or insert document
         await update_times(self.map_name, times)
