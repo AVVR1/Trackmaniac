@@ -40,16 +40,13 @@ class mapLeaderboard:
             if times[i][0] == times[i+1][0]:        # same name
                 print("same name")
                 if times[i][1] >= times[i+1][1]:    # better or equal time
-                    print(f"better or equal time removintg { times[i] }")
                     times.pop(i)
                     break
                 else:
-                    print(f"worse time; removing { times[i+1] }")
                     times.pop(i+1)
                     break
-
-        print(times)
         
+        times.sort(key=lambda x: x[1])  # Sort by time
         # Update or insert document
         await update_times(self.map_name, times)
 
