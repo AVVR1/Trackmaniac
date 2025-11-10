@@ -77,7 +77,7 @@ async def deletemap(ctx, map_name: str):
     if map_name not in mapLeaderboards:
         await ctx.send(f"No map {map_name}.")
         return
-    await mapLeaderboards[map_name].delete_file()
+    await mapLeaderboards[map_name].delete_map()
     del mapLeaderboards[map_name]
     await ctx.send(f"All times for map {map_name} have been deleted.")
 
